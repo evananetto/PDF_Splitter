@@ -1,3 +1,5 @@
+// split.js
+
 // Split PDF Module
 const SplitModule = (function() {
     'use strict';
