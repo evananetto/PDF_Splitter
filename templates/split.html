@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}PDF Splitter{% endblock %}
+{% block content %}
+
+<section class="space-y-6">
+
+  <!-- ===== PAGE HEADING ===== -->
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-line pb-6">
+    <div>
+      <h1 class="font-display text-3xl sm:text-4xl font-semibold text-ink tracking-tight">Split a PDF</h1>
+      <p class="text-ink2 text-sm sm:text-base mt-2 max-w-md">Pull out specific pages, or cut a document into even parts — right from your browser.</p>
+    </div>
+    <div class="flex items-center gap-2 text-xs font-medium text-ink2">
+      <i class="fas fa-circle-info text-gold"></i>
+      <span>500 pages max per file</span>
+    </div>
+  </div>
+
+  <!-- ===== UPLOAD STAGE ===== -->
+  <div id="split-upload-zone" class="rule-frame ledger-bg rounded-lg py-14 sm:py-20 lg:py-28 px-6 flex flex-col items-center justify-center text-center cursor-pointer">
+    <input type="file" id="split-file-input" accept=".pdf" onchange="window.SplitModule.uploadSplitFile(this)" class="hidden" />
+    <label for="split-file-input" class="cursor-pointer flex flex-col items-center">
+      <div class="w-16 h-16 rounded-full bg-navy flex items-center justify-center text-goldSoft text-xl mb-6">
+        <i class="fas fa-file-arrow-up"></i>
+      </div>
+      <span class="font-display text-xl sm:text-2xl font-medium text-ink">Drop your PDF here</span>
+      <span class="text-sm text-ink2 mt-2">or click to choose a file from your computer</span>
+    </label>
+  </div>
+
+  <!-- ===== FILE STATUS ROW ===== -->
+  <div id="split-file-status" class="hidden ledger-row rounded-lg pl-5 pr-3 py-3.5 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-4 min-w-0">
+      <i class="fas fa-file-lines text-navy text-lg"></i>
+      <div class="min-w-0">
+        <div id="split-filename" class="font-semibold text-ink truncate">document.pdf</div>
+        <div id="split-fileinfo" class="text-xs font-mono text-ink2 mt-0.5">0 pages · 0 MB</div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('split-file-input').click()" class="shrink-0 px-4 py-2 text-xs font-semibold text-navy border border-line rounded-md hover:bg-surface2 transition-colors">
+      <i class="fas fa-rotate mr-1.5"></i>Replace
+    </button>
+  </div>
+
+  <!-- ===== WORKSPACE ===== -->
+  <div id="split-workspace" class="hidden space-y-6">
+
+    <!-- COMMAND RIBBON -->
+    <div class="card rounded-lg p-4 sm:p-5">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+
+        <!-- segmented mode toggle -->
+        <div class="flex w-full lg:w-auto bg-surface2 border border-line rounded-md p-1 text-sm lg:shrink-0">
+          <button id="mode-range-btn" onclick="window.SplitModule.setSplitMode('range')" class="seg-btn flex-1 lg:flex-none px-4 py-2.5 lg:py-2 rounded-[5px] bg-navy text-white font-semibold text-sm">
+            Page range
+          </button>
+          <button id="mode-every-btn" onclick="window.SplitModule.setSplitMode('every_n')" class="seg-btn flex-1 lg:flex-none px-4 py-2.5 lg:py-2 rounded-[5px] text-ink2 font-medium text-sm">
+            Every N pages
+          </button>
+        </div>
+
+        <!-- range input -->
+        <div id="range-control-group" class="flex-1 min-w-[200px]">
+          <input type="text" id="range-input" placeholder="1-5, 6-10, 1,3,5, even, odd"
+            class="w-full bg-surface2 border border-line rounded-md px-4 py-2.5 text-sm font-mono text-ink placeholder:text-line2 focus:border-navy focus:ring-1 focus:ring-navy/25 outline-none transition" />
+        </div>
+
+        <!-- every-n input -->
+        <div id="every-control-group" class="hidden flex-1 min-w-[160px] items-center gap-2">
+          <span class="text-xs text-ink2 whitespace-nowrap">Pages per file</span>
+          <input type="number" id="every-n-input" value="5" min="1"
+            class="w-24 bg-surface2 border border-line rounded-md px-3 py-2.5 text-sm font-mono text-ink focus:border-navy focus:ring-1 focus:ring-navy/25 outline-none transition" />
+        </div>
+
+        <!-- selection count -->
+        <div class="hidden sm:flex items-center gap-2 text-xs font-mono text-ink2 border border-line rounded-md px-3 py-2.5 shrink-0">
+          <span>Selected</span>
+          <span id="selection-count" class="text-navy font-semibold">0 / 0</span>
+        </div>
+
+        <!-- execute -->
+        <button id="execute-split-btn" class="w-full lg:w-auto lg:shrink-0 bg-navy hover:bg-navy2 text-white font-semibold px-5 py-3 lg:py-2.5 rounded-md transition-colors text-sm flex items-center justify-center gap-2">
+          <i class="fas fa-download"></i> Download
+        </button>
+      </div>
+      <p class="text-xs text-ink2 mt-3 leading-relaxed">
+        Type page numbers, ranges, or <span class="font-mono">even</span> / <span class="font-mono">odd</span> — or tap pages below. Drag thumbnails to reorder.
+      </p>
+    </div>
+
+    <!-- PAGE SHEET -->
+    <div class="card rounded-lg p-5 sm:p-6">
+      <div class="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-line">
+        <h2 class="font-display text-lg font-medium text-ink">Pages</h2>
+        <div class="flex items-center gap-3">
+          <span id="selection-count-mobile" class="sm:hidden text-xs font-mono text-ink2"></span>
+          <button onclick="window.SplitModule.selectAllPages()" class="px-3 py-2 border border-line rounded-md text-xs font-semibold text-ink2 hover:text-ink hover:bg-surface2 transition-colors">Select all</button>
+          <button onclick="window.SplitModule.deselectAllPages()" class="px-3 py-2 border border-line rounded-md text-xs font-semibold text-ink2 hover:text-ink hover:bg-surface2 transition-colors">Clear</button>
+        </div>
+      </div>
+      <div id="thumbnail-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[640px] overflow-y-auto p-1 mt-4">
+        <!-- dynamic -->
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/split.js') }}"></script>
+{% endblock %}

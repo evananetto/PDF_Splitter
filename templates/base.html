@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}PDF Splitter{% endblock %}</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <!-- Typography: Fraunces (serif display), Manrope (UI/body), JetBrains Mono (data) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper:    '#FAFAF7',
+            surface:  '#FFFFFF',
+            surface2: '#F1F1EA',
+            line:     '#E4E3D9',
+            line2:    '#D2D1C3',
+            ink:      '#181B22',
+            ink2:     '#5B6070',
+            navy:     '#1E2E52',
+            navy2:    '#152140',
+            gold:     '#A17A2C',
+            goldSoft: '#F6EEDA',
+            success:  '#1F7A54',
+            danger:   '#B3261E',
+            info:     '#2A5DB0',
+          },
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            body: ['Manrope', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { scroll-behavior: smooth; }
+    body {
+      background: #FAFAF7;
+      color: #181B22;
+      font-family: 'Manrope', system-ui, sans-serif;
+    }
+
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: #F1F1EA; }
+    ::-webkit-scrollbar-thumb { background: #D2D1C3; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b9b8a8; }
+
+    /* ledger-ruled texture for the upload stage */
+    .ledger-bg {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 34px,
+        #ECEBDF 34px, #ECEBDF 35px
+      );
+      background-position: 0 20px;
+    }
+
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E4E3D9;
+    }
+
+    /* dashed rule used on upload stage instead of a filled dropzone box */
+    .rule-frame {
+      border: 1.5px dashed #D2D1C3;
+      transition: border-color .2s ease, background-color .2s ease;
+    }
+    .rule-frame:hover, .rule-frame.drag-over {
+      border-color: #A17A2C;
+      background-color: #FBF8F0;
+    }
+
+    /* receipt-style file status row */
+    .ledger-row {
+      background: #FFFFFF;
+      border: 1px solid #E4E3D9;
+      border-bottom: 1px dashed #D2D1C3;
+    }
+
+    /* thumbnails */
+    .thumb-card { transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+    .thumb-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(24,27,34,0.18); }
+    .thumb-card img { border-radius: 3px; }
+    .thumb-card.drag-over { transform: scale(1.02); }
+
+    /* segmented control */
+    .seg-btn { transition: all .15s ease; }
+
+    /* toast */
+    .toast-notification {
+      position: fixed;
+      top: 84px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 400px;
+      padding: 1rem 1.25rem;
+      background: #FFFFFF;
+      border: 1px solid #E4E3D9;
+      border-left: 3px solid #1E2E52;
+      box-shadow: 0 20px 45px -18px rgba(24,27,34,0.28);
+      border-radius: 8px;
+      transform: translateX(140%);
+      transition: transform .4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .toast-notification.show { transform: translateX(0); }
+    .toast-notification.success { border-left-color: #1F7A54; }
+    .toast-notification.error   { border-left-color: #B3261E; }
+    .toast-notification.info    { border-left-color: #2A5DB0; }
+    .toast-notification .toast-title {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #181B22;
+    }
+    .toast-notification .toast-message {
+      font-size: 0.85rem;
+      color: #5B6070;
+      margin-top: 0.2rem;
+      line-height: 1.45;
+    }
+    .toast-notification .toast-close {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.75rem;
+      background: none;
+      border: none;
+      font-size: 1.1rem;
+      line-height: 1;
+      color: #B0AF9F;
+      cursor: pointer;
+    }
+    .toast-notification .toast-close:hover { color: #181B22; }
+
+    @media (max-width: 640px) {
+      .toast-notification { right: 12px; left: 12px; max-width: none; top: 76px; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="font-body">
+
+  <!-- ===== TOOLBAR ===== -->
+  <header class="sticky top-0 z-50 bg-paper/90 backdrop-blur-sm border-b border-line">
+    <div class="max-w-[1280px] mx-auto px-4 sm:px-8 h-[68px] flex items-center justify-between">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-3">
+        <span class="w-9 h-9 flex items-center justify-center rounded-full bg-navy text-goldSoft text-sm">
+          <i class="fas fa-scissors"></i>
+        </span>
+        <span class="font-display font-semibold text-xl text-ink tracking-tight">PDF Splitter</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== TOAST ===== -->
+  <div id="toast-notification" class="toast-notification">
+    <button class="toast-close" onclick="window.PDFToolkit.closeToast()">&times;</button>
+    <div class="toast-title" id="toast-title">Success</div>
+    <div class="toast-message" id="toast-message">Operation completed successfully.</div>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <main class="max-w-[1280px] mx-auto px-4 sm:px-8 py-8 sm:py-12">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/pdf-toolkit.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
